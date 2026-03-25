@@ -1,0 +1,69 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-category-skill-userskill
+      author: pairr
+      changes:
+
+        - createTable:
+            tableName: categories
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+
+        - createTable:
+            tableName: skills
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: user_skills
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: skill_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: proficiency
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rating
+                  type: decimal(2,1)

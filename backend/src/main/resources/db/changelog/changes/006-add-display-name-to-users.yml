@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-add-display-name-to-users
+      author: pairr
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: display_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false

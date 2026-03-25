@@ -1,0 +1,102 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-add-performance-indexes
+      author: pairr
+      comment: Add indexes for frequently queried columns to improve query performance
+      changes:
+        # USERS TABLE INDEXES
+
+        # Index on email for authentication queries
+        # Used by: UserRepository.findByEmail(), existsByEmail()
+        # Query: SELECT * FROM users WHERE email = ?
+        - createIndex:
+            indexName: idx_users_email
+            tableName: users
+            columns:
+              - column:
+                  name: email
+            unique: false  # Email already has unique constraint, but explicit index helps
+
+        # USER_SKILLS TABLE INDEXES
+
+        # Index on user_id for user skill lookups
+        # Used by: UserSkillRepository.findAllByUserId()
+        # Query: SELECT * FROM user_skills WHERE user_id = ?
+        - createIndex:
+            indexName: idx_user_skills_user_id
+            tableName: user_skills
+            columns:
+              - column:
+                  name: user_id
+
+        # Index on skill_id for recommendation queries
+        # Used by: UserSkillRepository.getRecommendationCandidates()
+        # Query: JOIN UserSkill us ON us.user = u WHERE us.skill.id = :skillId
+        # This is critical for the recommendation engine performance
+        - createIndex:
+            indexName: idx_user_skills_skill_id
+            tableName: user_skills
+            columns:
+              - column:
+                  name: skill_id
+
+        # Composite index for (user_id, skill_id) lookups
+        # Used by: UserSkillRepository.findByUserIdAndSkillId()
+        # Query: SELECT * FROM user_skills WHERE user_id = ? AND skill_id = ?
+        - createIndex:
+            indexName: idx_user_skills_user_skill
+            tableName: user_skills
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: skill_id
+            unique: false  # Unique constraint already exists on these columns
+
+        # USER_AVAILABILITY TABLE INDEXES
+
+        # Index on user_id for user availability lookups
+        # Used by: UserAvailabilityRepository.findAllByUserId()
+        # Query: SELECT * FROM user_availability WHERE user_id = ?
+        - createIndex:
+            indexName: idx_user_availability_user_id
+            tableName: user_availability
+            columns:
+              - column:
+                  name: user_id
+
+        # Composite index on (user_id, day_type) - MOST CRITICAL
+        # Used by: UserAvailabilityRepository.findByUserIdAndDayType()
+        # Query: SELECT * FROM user_availability WHERE user_id = ? AND day_type = ?
+        # This is the most frequently used query in recommendations
+        - createIndex:
+            indexName: idx_user_availability_user_day
+            tableName: user_availability
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: day_type
+
+        # Index on day_type for recommendation queries
+        # Used by: UserSkillRepository.getRecommendationCandidates()
+        # Query: JOIN UserAvailability ua ON ua.user = u WHERE ua.dayType = :dayType
+        # Helps with filtering by day type in recommendation queries
+        - createIndex:
+            indexName: idx_user_availability_day_type
+            tableName: user_availability
+            columns:
+              - column:
+                  name: day_type
+
+        # SKILLS TABLE INDEXES
+
+        # Index on category_id for category-based skill lookups
+        # Used by: Potential queries filtering skills by category
+        # Query: SELECT * FROM skills WHERE category_id = ?
+        - createIndex:
+            indexName: idx_skills_category_id
+            tableName: skills
+            columns:
+              - column:
+                  name: category_id

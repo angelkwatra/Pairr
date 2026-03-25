@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-create-pairing-sessions-table
+      author: gemini
+      changes:
+        - createTable:
+            tableName: pairing_sessions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: requester_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_pairing_requester
+                    referencedTableName: users
+                    referencedColumnNames: id
+              - column:
+                  name: requestee_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_pairing_requestee
+                    referencedTableName: users
+                    referencedColumnNames: id
+              - column:
+                  name: skill_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_pairing_skill
+                    referencedTableName: skills
+                    referencedColumnNames: id
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requested_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_at
+                  type: timestamp
+              - column:
+                  name: completed_at
+                  type: timestamp
+              - column:
+                  name: cancelled_at
+                  type: timestamp

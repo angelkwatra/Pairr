@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-add-is-read-to-messages
+      author: gemini
+      changes:
+        - addColumn:
+            tableName: messages
+            columns:
+              - column:
+                  name: is_read
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pairr Chat Test</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; background: #0d1117; color: #c9d1d9; padding: 20px; }
+        h1 { font-size: 18px; margin-bottom: 16px; color: #58a6ff; }
+        h2 { font-size: 14px; margin-bottom: 8px; color: #8b949e; }
+
+        .grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; max-width: 960px; }
+        .panel { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 16px; }
+
+        label { display: block; font-size: 12px; color: #8b949e; margin-bottom: 4px; }
+        input, textarea { width: 100%; padding: 8px; background: #0d1117; border: 1px solid #30363d; border-radius: 4px; color: #c9d1d9; font-family: inherit; font-size: 13px; margin-bottom: 10px; }
+        textarea { resize: vertical; min-height: 60px; }
+        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-primary { background: #238636; color: #fff; }
+        .btn-primary:hover { background: #2ea043; }
+        .btn-danger { background: #da3633; color: #fff; }
+        .btn-danger:hover { background: #f85149; }
+        .btn-blue { background: #1f6feb; color: #fff; }
+        .btn-blue:hover { background: #388bfd; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .status { font-size: 12px; padding: 6px 10px; border-radius: 4px; margin-bottom: 12px; }
+        .status.disconnected { background: #da363322; color: #f85149; border: 1px solid #da363355; }
+        .status.connected { background: #23863622; color: #3fb950; border: 1px solid #23863655; }
+        .status.connecting { background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb55; }
+
+        #messages { height: 400px; overflow-y: auto; background: #0d1117; border: 1px solid #30363d; border-radius: 4px; padding: 8px; margin-bottom: 12px; }
+        .msg { padding: 6px 10px; margin-bottom: 6px; border-radius: 4px; font-size: 13px; }
+        .msg.incoming { background: #161b22; border-left: 3px solid #58a6ff; }
+        .msg.outgoing { background: #161b22; border-left: 3px solid #3fb950; }
+        .msg.system { background: #161b22; border-left: 3px solid #8b949e; color: #8b949e; font-style: italic; }
+        .msg .meta { font-size: 11px; color: #8b949e; margin-bottom: 2px; }
+
+        #log { height: 150px; overflow-y: auto; background: #0d1117; border: 1px solid #30363d; border-radius: 4px; padding: 8px; font-size: 11px; color: #8b949e; font-family: monospace; margin-top: 16px; }
+        .log-entry { margin-bottom: 2px; }
+        .log-entry.error { color: #f85149; }
+        .log-entry.success { color: #3fb950; }
+
+        .btn-row { display: flex; gap: 8px; }
+        .section { margin-bottom: 16px; }
+        hr { border: none; border-top: 1px solid #30363d; margin: 16px 0; }
+    </style>
+</head>
+<body>
+
+<h1>Pairr WebSocket Chat Test</h1>
+
+<div class="grid">
+    <!-- Left panel: Config -->
+    <div>
+        <div class="panel">
+            <h2>1. Get a JWT</h2>
+            <div class="section">
+                <label>Email</label>
+                <input type="text" id="authEmail" placeholder="alice@test.com">
+                <label>Password</label>
+                <input type="password" id="authPassword" placeholder="pass123">
+                <label>Display Name (register only)</label>
+                <input type="text" id="authDisplayName" placeholder="Alice">
+                <div class="btn-row">
+                    <button class="btn-blue" onclick="doLogin()">Login</button>
+                    <button class="btn-blue" onclick="doRegister()">Register</button>
+                </div>
+            </div>
+
+            <hr>
+
+            <h2>2. Connect WebSocket</h2>
+            <div class="section">
+                <label>JWT Token</label>
+                <textarea id="token" placeholder="Paste JWT here, or use Login/Register above"></textarea>
+                <div id="connectionStatus" class="status disconnected">Disconnected</div>
+                <div class="btn-row">
+                    <button class="btn-primary" id="connectBtn" onclick="connect()">Connect</button>
+                    <button class="btn-danger" id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+                </div>
+            </div>
+
+            <hr>
+
+            <h2>3. Send Message</h2>
+            <div class="section">
+                <label>Recipient User ID</label>
+                <input type="text" id="recipientId" placeholder="UUID of recipient">
+                <label>Message</label>
+                <input type="text" id="messageContent" placeholder="Hello!" onkeydown="if(event.key==='Enter')sendMessage()">
+                <button class="btn-primary" id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+            </div>
+
+            <hr>
+
+            <h2>4. REST Endpoints</h2>
+            <div class="section">
+                <div class="btn-row" style="flex-wrap:wrap; gap:6px;">
+                    <button class="btn-blue" onclick="fetchConversations()">My Conversations</button>
+                </div>
+                <div style="margin-top:8px;">
+                    <label>Conversation ID (for history)</label>
+                    <input type="text" id="conversationId" placeholder="UUID">
+                    <button class="btn-blue" onclick="fetchMessages()">Get Messages</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right panel: Messages + Log -->
+    <div>
+        <div class="panel">
+            <h2>Messages</h2>
+            <div id="messages"></div>
+            <h2>Debug Log</h2>
+            <div id="log"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---- STOMP over WebSocket (minimal client, no dependencies) ----
+
+    let ws = null;
+    let connected = false;
+    let myUserId = null;
+
+    function log(text, type = '') {
+        const el = document.getElementById('log');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry ' + type;
+        entry.textContent = new Date().toLocaleTimeString() + ' ' + text;
+        el.appendChild(entry);
+        el.scrollTop = el.scrollHeight;
+    }
+
+    function addMessage(content, senderName, senderId, timestamp, type) {
+        const el = document.getElementById('messages');
+        const msg = document.createElement('div');
+        msg.className = 'msg ' + type;
+        const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+        msg.innerHTML = '<div class="meta">' + senderName + ' &middot; ' + time + '</div>' + escapeHtml(content);
+        el.appendChild(msg);
+        el.scrollTop = el.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function setStatus(text, className) {
+        const el = document.getElementById('connectionStatus');
+        el.textContent = text;
+        el.className = 'status ' + className;
+    }
+
+    function setConnected(state) {
+        connected = state;
+        document.getElementById('connectBtn').disabled = state;
+        document.getElementById('disconnectBtn').disabled = !state;
+        document.getElementById('sendBtn').disabled = !state;
+    }
+
+    // ---- Minimal STOMP framing ----
+
+    function stompFrame(command, headers, body) {
+        let frame = command + '\n';
+        for (const [k, v] of Object.entries(headers)) {
+            frame += k + ':' + v + '\n';
+        }
+        frame += '\n' + (body || '') + '\0';
+        return frame;
+    }
+
+    function parseStompFrame(data) {
+        const nullIdx = data.indexOf('\0');
+        const raw = nullIdx >= 0 ? data.substring(0, nullIdx) : data;
+        const divider = raw.indexOf('\n\n');
+        const headerPart = divider >= 0 ? raw.substring(0, divider) : raw;
+        const body = divider >= 0 ? raw.substring(divider + 2) : '';
+        const lines = headerPart.split('\n');
+        const command = lines[0];
+        const headers = {};
+        for (let i = 1; i < lines.length; i++) {
+            const colon = lines[i].indexOf(':');
+            if (colon > 0) {
+                headers[lines[i].substring(0, colon)] = lines[i].substring(colon + 1);
+            }
+        }
+        return { command, headers, body };
+    }
+
+    // ---- Auth helpers ----
+
+    async function doLogin() {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value.trim();
+        if (!email || !password) { log('Email and password required', 'error'); return; }
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) { log('Login failed: ' + (data.error || res.status), 'error'); return; }
+            document.getElementById('token').value = data.token;
+            parseAndSetUserId(data.token);
+            log('Login successful — token set', 'success');
+        } catch (e) { log('Login error: ' + e.message, 'error'); }
+    }
+
+    async function doRegister() {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value.trim();
+        const displayName = document.getElementById('authDisplayName').value.trim();
+        if (!email || !password || !displayName) { log('All fields required for registration', 'error'); return; }
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, displayName })
+            });
+            const data = await res.json();
+            if (!res.ok) { log('Register failed: ' + (data.error || res.status), 'error'); return; }
+            document.getElementById('token').value = data.token;
+            parseAndSetUserId(data.token);
+            log('Registered — token set', 'success');
+        } catch (e) { log('Register error: ' + e.message, 'error'); }
+    }
+
+    function parseAndSetUserId(token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            myUserId = payload.sub;
+            log('Your user ID: ' + myUserId);
+        } catch (e) { log('Could not parse user ID from token', 'error'); }
+    }
+
+    // ---- WebSocket ----
+
+    function connect() {
+        const token = document.getElementById('token').value.trim();
+        if (!token) { log('Token is required', 'error'); return; }
+
+        parseAndSetUserId(token);
+        setStatus('Connecting...', 'connecting');
+        log('Opening WebSocket...');
+
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(protocol + '//' + location.host + '/ws?token=' + encodeURIComponent(token));
+
+        ws.onopen = function () {
+            log('WebSocket open, sending STOMP CONNECT');
+            ws.send(stompFrame('CONNECT', { 'accept-version': '1.2', 'heart-beat': '0,0' }, ''));
+        };
+
+        ws.onmessage = function (event) {
+            const data = typeof event.data === 'string' ? event.data : '';
+            if (data === '\n' || data === '') return; // heartbeat
+
+            const frame = parseStompFrame(data);
+            log('RECV ' + frame.command);
+
+            if (frame.command === 'CONNECTED') {
+                setStatus('Connected as ' + (myUserId || 'unknown'), 'connected');
+                setConnected(true);
+                log('STOMP connected, subscribing to /user/queue/messages', 'success');
+                ws.send(stompFrame('SUBSCRIBE', { id: 'sub-0', destination: '/user/queue/messages' }, ''));
+                // Auto-fetch missed messages on connect
+                loadMissedMessages();
+            } else if (frame.command === 'MESSAGE') {
+                try {
+                    const msg = JSON.parse(frame.body);
+                    const isMine = msg.senderId === myUserId;
+                    addMessage(msg.content, msg.senderDisplayName, msg.senderId, msg.createdAt, isMine ? 'outgoing' : 'incoming');
+                    log('Message from ' + msg.senderDisplayName + ': ' + msg.content.substring(0, 50));
+                } catch (e) {
+                    log('Could not parse message: ' + frame.body, 'error');
+                }
+            } else if (frame.command === 'ERROR') {
+                log('STOMP ERROR: ' + (frame.headers.message || frame.body), 'error');
+            }
+        };
+
+        ws.onerror = function () {
+            log('WebSocket error', 'error');
+        };
+
+        ws.onclose = function (event) {
+            log('WebSocket closed (code=' + event.code + ')');
+            setStatus('Disconnected', 'disconnected');
+            setConnected(false);
+            ws = null;
+        };
+    }
+
+    function disconnect() {
+        if (ws) {
+            log('Sending STOMP DISCONNECT');
+            ws.send(stompFrame('DISCONNECT', { receipt: 'disc-1' }, ''));
+            ws.close();
+        }
+        setStatus('Disconnected', 'disconnected');
+        setConnected(false);
+        ws = null;
+    }
+
+    function sendMessage() {
+        const recipientId = document.getElementById('recipientId').value.trim();
+        const content = document.getElementById('messageContent').value.trim();
+        if (!recipientId || !content) { log('Recipient ID and message required', 'error'); return; }
+        if (!ws || !connected) { log('Not connected', 'error'); return; }
+
+        const body = JSON.stringify({ recipientId, content });
+        ws.send(stompFrame('SEND', { destination: '/app/chat.send', 'content-type': 'application/json' }, body));
+        log('Sent message to ' + recipientId);
+        document.getElementById('messageContent').value = '';
+    }
+
+    // ---- Auto-fetch missed messages on connect ----
+
+    async function loadMissedMessages() {
+        log('Fetching missed messages...');
+        try {
+            const res = await fetch('/api/chat/conversations', { headers: getAuthHeader() });
+            const conversations = await res.json();
+            if (!res.ok || !conversations.length) {
+                log('No conversations to catch up on');
+                return;
+            }
+            addMessage('--- Loading missed messages ---', 'System', '', null, 'system');
+            for (const conv of conversations) {
+                const msgRes = await fetch('/api/chat/conversations/' + conv.id + '/messages', { headers: getAuthHeader() });
+                const messages = await msgRes.json();
+                if (!msgRes.ok) continue;
+                messages.forEach(m => {
+                    const isMine = m.senderId === myUserId;
+                    addMessage(m.content, m.senderDisplayName, m.senderId, m.createdAt, isMine ? 'outgoing' : 'incoming');
+                });
+            }
+            addMessage('--- Caught up. Live messages will appear below ---', 'System', '', null, 'system');
+            log('Loaded history for ' + conversations.length + ' conversation(s)', 'success');
+        } catch (e) { log('Failed to load missed messages: ' + e.message, 'error'); }
+    }
+
+    // ---- REST helpers ----
+
+    function getAuthHeader() {
+        const token = document.getElementById('token').value.trim();
+        return token ? { 'Authorization': 'Bearer ' + token } : {};
+    }
+
+    async function fetchConversations() {
+        try {
+            const res = await fetch('/api/chat/conversations', { headers: getAuthHeader() });
+            const data = await res.json();
+            if (!res.ok) { log('Fetch conversations failed: ' + (data.error || res.status), 'error'); return; }
+            addMessage('Conversations: ' + data.length + ' found', 'System', '', null, 'system');
+            data.forEach(c => {
+                addMessage(c.otherUserDisplayName + ' (conv: ' + c.id + ') — last: ' + (c.lastMessage || 'none'), 'System', '', c.lastMessageAt, 'system');
+            });
+            log('Fetched ' + data.length + ' conversations', 'success');
+        } catch (e) { log('Error: ' + e.message, 'error'); }
+    }
+
+    async function fetchMessages() {
+        const convId = document.getElementById('conversationId').value.trim();
+        if (!convId) { log('Conversation ID required', 'error'); return; }
+        try {
+            const res = await fetch('/api/chat/conversations/' + convId + '/messages', { headers: getAuthHeader() });
+            const data = await res.json();
+            if (!res.ok) { log('Fetch messages failed: ' + (data.error || res.status), 'error'); return; }
+            addMessage('--- History for conversation ' + convId + ' (' + data.length + ' messages) ---', 'System', '', null, 'system');
+            data.forEach(m => {
+                const isMine = m.senderId === myUserId;
+                addMessage(m.content, m.senderDisplayName, m.senderId, m.createdAt, isMine ? 'outgoing' : 'incoming');
+            });
+            log('Fetched ' + data.length + ' messages', 'success');
+        } catch (e) { log('Error: ' + e.message, 'error'); }
+    }
+</script>
+
+</body>
+</html>

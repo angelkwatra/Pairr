@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-add-unique-pending-pairing-index
+      author: gemini
+      changes:
+        # Cleanup: Delete duplicates before creating the index
+        - sql:
+            dbms: postgresql
+            sql: |
+              DELETE FROM pairing_sessions 
+              WHERE id IN (
+                SELECT id FROM (
+                  SELECT id, ROW_NUMBER() OVER (
+                    PARTITION BY requester_id, requestee_id, skill_id 
+                    ORDER BY requested_at DESC
+                  ) as row_num
+                  FROM pairing_sessions
+                  WHERE status = 'PENDING'
+                ) t
+                WHERE t.row_num > 1
+              );
+        - sql:
+            dbms: postgresql
+            sql: CREATE UNIQUE INDEX uq_pending_pairing ON pairing_sessions (requester_id, requestee_id, skill_id) WHERE status = 'PENDING';

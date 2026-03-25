@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-add-username-and-google-id
+      author: gemini
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  type: varchar(255)
+                  constraints:
+                    unique: true
+              - column:
+                  name: google_id
+                  type: varchar(255)
+                  constraints:
+                    unique: true
+        # For existing users, set username to their email prefix temporarily
+        - sql:
+            sql: UPDATE users SET username = SPLIT_PART(email, '@', 1) WHERE username IS NULL;
+        - addNotNullConstraint:
+            tableName: users
+            columnName: username
+            columnDataType: varchar(255)

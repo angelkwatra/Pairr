@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-enforce-unique-skill-rating
+      author: gemini
+      changes:
+        # 1. Cleanup: Delete duplicate ratings for the same skill/pair, keeping the newest
+        - sql:
+            dbms: postgresql
+            sql: |
+              DELETE FROM ratings 
+              WHERE id IN (
+                SELECT id FROM (
+                  SELECT id, ROW_NUMBER() OVER (
+                    PARTITION BY from_user_id, to_user_id, skill_id 
+                    ORDER BY created_at DESC
+                  ) as row_num
+                  FROM ratings
+                ) t
+                WHERE t.row_num > 1
+              );
+        # 2. Drop the session-based constraint
+        - dropUniqueConstraint:
+            tableName: ratings
+            constraintName: uk_rating_session_user
+        # 3. Restore the skill-based constraint
+        - addUniqueConstraint:
+            tableName: ratings
+            columnNames: from_user_id, to_user_id, skill_id
+            constraintName: uq_rating_from_to_skill

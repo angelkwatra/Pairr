@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add-foreign-keys
+      author: pairr
+      changes:
+
+        - addForeignKeyConstraint:
+            baseTableName: skills
+            baseColumnNames: category_id
+            referencedTableName: categories
+            referencedColumnNames: id
+            constraintName: fk_skills_category
+
+        - addForeignKeyConstraint:
+            baseTableName: user_skills
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_user_skills_user
+
+        - addForeignKeyConstraint:
+            baseTableName: user_skills
+            baseColumnNames: skill_id
+            referencedTableName: skills
+            referencedColumnNames: id
+            constraintName: fk_user_skills_skill

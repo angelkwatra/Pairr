@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: pairr-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: pairr
+      POSTGRES_USER: pairr
+      POSTGRES_PASSWORD: pairr
+    volumes:
+      - pairr_pgdata:/var/lib/postgresql/data
+
+volumes:
+  pairr_pgdata:

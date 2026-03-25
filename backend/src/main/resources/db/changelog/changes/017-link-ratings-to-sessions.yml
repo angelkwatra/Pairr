@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-link-ratings-to-sessions
+      author: gemini
+      changes:
+        - addColumn:
+            tableName: ratings
+            columns:
+              - column:
+                  name: session_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_rating_session
+                    referencedTableName: pairing_sessions
+                    referencedColumnNames: id
+        # Drop old constraint that prevented multiple ratings between same users for same skill
+        - dropUniqueConstraint:
+            tableName: ratings
+            constraintName: uq_rating_from_to_skill
+        # Add new constraint: One rating per user per session
+        - addUniqueConstraint:
+            tableName: ratings
+            columnNames: session_id, from_user_id
+            constraintName: uk_rating_session_user

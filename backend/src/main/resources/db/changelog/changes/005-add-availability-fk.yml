@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-add-availability-fk
+      author: pairr
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: user_availability
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_availability_user

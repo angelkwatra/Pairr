@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-user-availability
+      author: pairr
+      changes:
+
+        - createTable:
+            tableName: user_availability
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: day_type
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: start_time
+                  type: time
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: end_time
+                  type: time
+                  constraints:
+                    nullable: false

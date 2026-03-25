@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-enforce-column-lengths
+      author: gemini
+      changes:
+        - modifyDataType:
+            tableName: users
+            columnName: email
+            newDataType: varchar(100)
+        - modifyDataType:
+            tableName: users
+            columnName: username
+            newDataType: varchar(20)
+        - modifyDataType:
+            tableName: users
+            columnName: display_name
+            newDataType: varchar(50)

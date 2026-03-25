@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-add-completed-sessions-count-to-users
+      author: gemini
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: completed_sessions_count
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

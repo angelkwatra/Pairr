@@ -1,0 +1,92 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-create-ratings-table
+      author: pairr
+      changes:
+
+        - createTable:
+            tableName: ratings
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+
+              - column:
+                  name: from_user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: to_user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: skill_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: rating
+                  type: int
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: feedback
+                  type: text
+
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: ratings
+            baseColumnNames: from_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_ratings_from_user
+
+        - addForeignKeyConstraint:
+            baseTableName: ratings
+            baseColumnNames: to_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_ratings_to_user
+
+        - addForeignKeyConstraint:
+            baseTableName: ratings
+            baseColumnNames: skill_id
+            referencedTableName: skills
+            referencedColumnNames: id
+            constraintName: fk_ratings_skill
+
+        - addUniqueConstraint:
+            tableName: ratings
+            columnNames: from_user_id, to_user_id, skill_id
+            constraintName: uq_rating_from_to_skill
+
+        - createIndex:
+            indexName: idx_ratings_to_user_id
+            tableName: ratings
+            columns:
+              - column:
+                  name: to_user_id
+
+        - createIndex:
+            indexName: idx_ratings_to_user_skill
+            tableName: ratings
+            columns:
+              - column:
+                  name: to_user_id
+              - column:
+                  name: skill_id
