@@ -197,8 +197,11 @@ export function ChatProvider({ children }) {
   useEffect(() => {
     if (!token) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
+    const baseApiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+    // Resolve relative paths if VITE_API_URL is just empty/relative
+    const apiTarget = new URL(baseApiUrl, window.location.origin);
+    const protocol = apiTarget.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = apiTarget.host;
     const brokerURL = `${protocol}//${host}/ws?token=${encodeURIComponent(token)}`;
 
     const client = new Client({
